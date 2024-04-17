@@ -1,0 +1,531 @@
+---
+title: "Contas Ellegance"
+subtitle: "Análise do Conselho Fiscal dos principais aspectos do balancete mensal."
+author: "Diego Guimarães"
+date: today
+date-format: "DD/MM/YYYY"
+format: html
+embed-resources: true
+theme: sandstone
+toc: true
+toc-title: "Conteúdo"
+tbl-cap-location: top
+editor: visual
+text-align: justify
+execute:
+  echo: false
+  warning: false
+lang: pt-BR
+---
+
+```{css, echo = FALSE}
+.parágrafo {
+  text-align: justify !important
+}
+```
+
+## Objetivo
+
+::: parágrafo
+A versão digital da análise do balancete tem por objetivo facilitar, dar maior agilidade e prover dados organizados, cálculos e resumos customizados e facilmente reproduzíveis das principais informações que podem ser obtidas através dos balancetes mensais elaborados pela contabilidade da empresa administradora do condomínio, atualmente Lifecondo.
+:::
+
+### Balancetes mensais
+
+::: parágrafo
+Informações fornecidas impressas, em livro-caixa, com as informações originais, assinadas e comprovadas das diversas movimentações financeiras do condomínio, incluindo receitas, despesas, folha de pagamento, obrigações sociais e fiscais.
+:::
+
+### Balancetes digitais
+
+::: parágrafo
+A versão digital dos balancetes são fornecidos pela administradora seguindo o formato de exportação de seus sistemas internos, em formato `xlsx` não estruturado, contendo apenas as relações textuais e numéricas das tabelas que compõem o balancete impresso, com a mesma base de dados, que devem manter as mesmas informações e período de referência.
+
+As informações tratadas através dos balancetes digitais não substitui o balancete em livro-caixa, que permanece sendo a versão oficial e legal. Eventuais diferenças entre sua versão impressa e a digital são consideradas não conformidades e devem ser tratadas pelo emissor do balancete.
+:::
+
+#### Benefícios de uma versão digital
+
+::: parágrafo
+A versão digital do balancete oferece vantagens significativas:
+
+-   Agilidade: A automatização dos cálculos em R permite gerar o balancete de forma rápida e precisa.
+-   Acessibilidade: Os moradores podem acessar as informações com maior facilidade e disponibilidade, não se limitando a extensos `PDF`s, facilitando a prestação de contas e sua transparência.
+-   Análise Detalhada: Com dados digitais, é possível realizar análises mais profundas, identificando padrões e tendências.
+-   Engajamento dos moradores: Ao compartilhar o balancete com os moradores, a administração promove a transparência e incentiva o envolvimento de todos na gestão financeira, possibilitando o envolvimento da comunidade na contribuição de sugestões e melhorando a fiscalização das finanças.
+:::
+
+#### Ferramenta de análise
+
+::: parágrafo
+Foi utilizado script em `R 4.3`, linguagem de programação em código aberto, facilmente reproduzível utilizando os mesmos arquivos de balancetes digitais, profundamente customizável às necessidades da análise proposta, com maior facilidade de auditagem quando comparado às típicas planilhas em MS Excel.
+:::
+
+#### Elaboração
+
+::: parágrafo
+Essa análise foi elaborado com a finalidade de contribuir com a gestão financeira do condomínio. Tendo isso em mente, críticas e sugestões podem ser endereçadas a [^1], conselheiro fiscal.
+:::
+
+[^1]: Autor: [Diego Guimarães](diegomsg@gmail.com "E-mail de contato"), conselheiro fiscal.
+
+## Dados
+
+```{r}
+#| label: Carrega dados
+
+# Bibliotecas adicionais
+library(plotly)
+
+# Carrega funções
+source("src/quarto_print.R")
+source("src/utils.R")
+
+# Carrega dados
+source("src/ler_dados.R")
+
+# Opções
+options(digits = 2, OutDec = ",")
+```
+
+::: parágrafo
+As informações são organizadas de modo sequencial e resumido, e posteriomente são analisados os indicadores que melhor transmitem a saúde das finanças do condomínio separadamente, em resumo de saldos das contas, seu resumo, receitas, despesas, checagem de fluxo de valores, inadimplência, despesas gerais, agrupadas, resumos mensais.
+:::
+
+### Empreendimento
+
+::: parágrafo
+`r empreendimento$nome_completo`, CNPJ `r numbersBR::CNPJ(empreendimento$cnpj)`, situado à `r glue::glue("{empreendimento$endereço}, {empreendimento$num}, bairro {empreendimento$bairro}, {empreendimento$cidade}/{empreendimento$uf}")`.
+:::
+
+```{r}
+#|label: Gestão
+#|tbl-cap: Dados do empreendimento e gestão
+inner_join(gestores, unidades, by = join_by(id)) %>%
+  select(função, Nome = nome_completo, torre, unidade) %>%
+  mutate(função = str_to_title(função)) %>%
+  arrange(desc(função)) %>%
+  rename_with(str_to_title)
+```
+
+### Competência
+
+Última competência atualizada: `r max(contas$Competência) %>% format("%m/%Y")`.
+
+Primeira comperência disponível: `r min(contas$Competência) %>% format("%m/%Y")`.
+
+::: parágrafo
+Apesar de disponibilizados, os balancetes mensais anteriores a `r min(contas$Competência) %>% format("%m/%Y")` não possuem integridade nas suas informações, pois a exclusão de uma das contas utilizadas à época dos sistemas da administradora impede que as informações exportadas inclua os valores movimentados nesta conta, tornando-os inviáveis.
+:::
+
+```{r}
+#| label: base
+#| echo: false
+mes_corrente <- max(contas$Competência)
+mes_anterior <- rollbackward(mes_corrente, roll_to_first = T)
+```
+
+### Saldos
+
+```{r}
+#|label: Tabela de saldos
+saldos_resumo <- saldos %>% 
+  mutate(Data = Data - 1) %>%
+  select(Data, Saldo) %>%
+  mutate("Variação mês anterior" = scales::percent(Saldo/lag(Saldo) -1, 0.1),
+         "Média móvel 3 meses" = zoo::rollmean(Saldo, k = 3, fill = NA, align = "right")) %>%
+  arrange(desc(Data))
+
+saldos_resumo %>%
+  mutate(Data = format(Data, "%d/%m/%Y"))
+```
+
+```{r}
+#|label: Gráfico de saldos
+saldos_resumo %>% 
+  arrange(Data) %>%
+  plot_ly(x = ~Data, y = ~Saldo, 
+          type = "bar", name = "Saldo final mensal") %>%
+  add_lines(y = ~`Média móvel 3 meses`, name = "Média móvel (3m)") %>%
+  add_lines(y = ~mean(Saldo), name = "Média")
+```
+
+## Contas e saldos
+
+```{r}
+#| label: Contas
+contas %>% 
+  arrange(desc(Competência)) %>%
+  mutate(Competência = format(Competência, "%m/%Y"),
+         Conta = str_to_sentence(Conta),
+         Check = ifelse(Check == T, "✅", ""))
+```
+
+## Receitas
+
+As receitas de um condomínio podem ser divididas em duas categorias principais. As receitas ordinárias ou recorrentes são aquelas que ocorrem regularmente, como a taxa condominial e taxa para composição de funco de reserva. Por outro lado, as receitas não recorrentes são eventos únicos, como aluguel temporário de áreas comuns, rendimentos financeiros e valores provenientes de processos judiciais.
+
+```{r}
+#|label: Receitas resumo
+receitas_resumo <- receitas_gerais %>%
+  rename(Mês = Relatorio) %>%
+  mutate("Variação mês anterior" = scales::percent(Receitas/lag(Receitas) -1, 0.1),
+         "Média móvel 3 meses" = zoo::rollmean(Receitas, k = 3, fill = NA, align = "right")) %>%
+  arrange(desc(Mês))
+
+receitas_resumo %>%
+  mutate(Mês = format(Mês, "%m/%Y"))
+```
+
+```{r}
+#|label: Gráfico de receitas
+receitas_resumo %>%
+  arrange(Mês) %>%
+  plot_ly(x = ~Mês, y = ~Receitas, 
+          type = "bar", name = "Receita mensal") %>%
+  add_lines(y = ~`Média móvel 3 meses`, name = "Média móvel (3m)") %>%
+  add_lines(y = ~mean(Receitas), name = "Média")
+```
+
+### Receitas recorrentes e não recorrentes
+
+```{r}
+receitas_tx_condominio %>%
+  inner_join(receitas_gerais, by = join_by(Relatorio)) %>%
+  mutate("Receita não recorrente" = Receitas - R_recorrente_total) %>%
+  select(Mês = Relatorio, Receitas, 
+         "Receita recorrente" = R_recorrente_total,
+         Tarifa, "Receita recorrente líquida" = R_recorrente_liquida,
+         "Receita não recorrente") %>%
+  arrange(desc(Mês)) %>%
+  mutate(Mês = format(Mês, "%m/%Y"),
+         "%tarifa" = scales::percent(abs(Tarifa) / `Receita recorrente`, 0.1),
+         "%não recorrente" = scales::percent(`Receita não recorrente` / Receitas, 0.1)) %>% 
+  select(-c(Tarifa, Receitas))
+```
+
+### Receitas por unidade
+
+```{r}
+#|label: Receitas por unidade
+Receitas_p_unidade %>% 
+  arrange(id, desc(Competência)) %>%
+  select(Mês = Competência, Torre = torre, Unidade = unidade,
+         Vencimento = Data_vencimento, Liquidação = Data_liquidacao, 
+         Crédito = Data_credito, Balancete = Relatorio, Tempo, 
+         Valor = Valor_bruto, Tarifa, Líquido = Valor_liquido, Atraso,
+         Abonada) %>%
+  drop_na() %>%
+  mutate(across(c(Atraso, Abonada), ~ifelse(.x == T, "❌", "")),
+         across(c(Mês, Balancete), ~format(.x, "%m/%Y")),
+         across(c(Vencimento, Liquidação, Crédito), ~format(.x, "%d/%m/%Y")),
+         Unidade = as.integer(Unidade))
+```
+
+### Totais pagos por unidade, histórico de inadimplência e recorrência
+
+```{r}
+#|label: Histórico de inadimplência
+Inadimplencia_historica %>%
+  inner_join(unidades, by = join_by(id)) %>%
+  arrange(id) %>%
+  select(Torre = torre, Unidade = unidade, Pago = Valor_bruto,
+         Tarifa, Líquido = Valor_liquido, 
+         "Tempo de pagamento" = Tempo_medio, "Atraso médio" = Atraso_medio,
+         "Atraso máximo" = Atraso_max, "Quant. de atrasos" = Atrasos,
+         Recorrência = Recorrencia, Atrasos) %>%
+  mutate(across(where(is.numeric), ~ifelse(!is.finite(.x), 0, .x)),
+         Recorrência = scales::percent(Recorrência, 1),
+         across(c(Unidade, `Quant. de atrasos`, `Atraso máximo`), as.integer))
+```
+
+## Inadimplência
+
+Os balancetes apresentados pela administradora têm apresentado problema recorrente de omissão de pagamentos entre a virada de mês, os quais não entram nem no balancete do mês anterior, nem do mês posterior, gerando problemas na apuração de inadimplência quando um pagamento é realizado no final do mês e liquidado apenas no mês seguinte.
+
+::: callout-caution
+Outra questão que impacta a inadimplência corrente é a falta de informação no balancete quanto aos acordos realizados, que não mencionam a competência original dos documentos que passaram por negociação, mencionando a informação do acordo como a competência corrente. Considerar essa informação quando observar a inadimplência corrente.
+:::
+
+### Inadimplência corrente
+
+```{r}
+#|label: Inadimplência corrente
+Inadimplencia_corrente <- Inadimplencia %>%
+  inner_join(unidades, by = join_by(id)) %>%
+  arrange(Competência, id) %>%
+  select(Mês = Competência, Torre = torre.y, Unidade = unidade.y, 
+         Bruto = Valor_bruto, Vencimento = Data_vencimento, "Atraso (dias)" = Tempo, multa, 
+         juros, honorários, "Valor atualizado" = Valor_atual) %>%
+  rename_with(str_to_title) %>%
+  filter(Mês != inicio_mes(today())) %>%
+  mutate(Mês = format(Mês, "%m/%Y"),
+         Vencimento = format(Vencimento, "%d/%m/%Y"),
+         across(c(Unidade, `Atraso (Dias)`), as.integer))
+
+Inadimplencia_corrente
+```
+
+### Inadimplência corrente por unidade
+
+```{r}
+#| label: Inadimplência corrente por unidade
+group_by(Inadimplencia_corrente, Torre, Unidade) %>%
+  summarise(Total = sum(Bruto),
+            Atualizado = sum(`Valor Atualizado`), .groups = "keep") %>%
+  ungroup()
+```
+
+## Despesas
+
+As depesas no balancete digital não possuem informações completas de forma estruturada, como serviço originário da despesa, ou mês de referência para serviços recorrentes. Essa informação, quando disponível, faz parte do texto do nome do prestador de serviço, e tais informações foram tratadas conforme padrão recorrente apresentado, sendo indisponível em muitos casos.
+
+Exemplo presente no demonstrativo: CMT ENGENHARIA E SEGURANCA DO TRABALHO LTDA (Ref. Parcela 2/12) 15/02/2024 NF-202400000000036 Boleto 0,30% 250,00
+
+Para a obtenção das informações presentes nesse campo, são adotados métodos computacionais para quebrar esse texto em número e datas, assim é possível realizar cálculos e demais informações úteis.
+
+### Despesas resumidas
+
+```{r}
+#| label: Despesas gerais
+despesas_resumo <- despesas %>%
+  select(Mês = Relatorio, Despesas) %>%
+  mutate(Despesas = -Despesas,
+         "Variação mês anterior" = scales::percent(Despesas/lag(Despesas) -1, 0.1),
+         "Média móvel 3 meses" = zoo::rollmean(Despesas, k = 3, fill = NA, align = "right")) %>%
+  arrange(desc(Mês))
+         
+despesas_resumo %>%
+  mutate(Mês = format(Mês, "%m/%Y"))
+```
+
+```{r}
+#| label: Gráfico de despesas gerais
+despesas_resumo %>% 
+  arrange(Mês) %>%
+  plot_ly(type = "bar", x = ~Mês, y = ~Despesas, 
+          name = "Despesa mensal") %>%
+  add_lines(y = ~`Média móvel 3 meses`, name = "Média móvel (3m)") %>%
+  add_lines(y = ~mean(Despesas), name = "Média")
+```
+
+### Despesas detalhadas
+
+```{r}
+#| label: Despesas detalhadas
+df_despesas %>%
+  select(Balancete = Relatorio, Grupo, Destinatário, Liquidação, Método, 
+         Valor, Obs, Competência, Parcela, Parcela_n) %>%
+  mutate(Parcelamento = ifelse(!is.na(Parcela), glue::glue("{Parcela}/{Parcela_n}"), NA),
+         Competência = format(Competência, "%m/%Y")) %>%
+  select(-c(Parcela, Parcela_n)) %>%
+  arrange(desc(Balancete), desc(Valor), Liquidação) %>%
+  mutate(Balancete = format(Balancete, "%m/%Y"))
+```
+
+### Despesas por grupo em incidência mensal
+
+```{r}
+#| label: Despesas agrupadas
+df_despesas %>%
+  select(Balancete = Relatorio, Grupo, Valor) %>%
+  group_by(Balancete, Grupo) %>%
+  summarise(Total = sum(Valor), .groups = "keep") %>%
+  arrange(desc(Balancete), desc(Total)) %>%
+  mutate(Balancete = format(Balancete, "%m/%Y")) %>%
+  ungroup()
+```
+
+### Distribuição das despesas por grupo
+
+Distribuição das despesas dos últimos 12 meses.
+
+```{r}
+#| label: Despesas por grupo
+#| echo: false
+
+despesas_categorias <- read.csv2("src/despesas_categorias.csv")
+meses <- 12
+
+despesas_12m <- df_despesas |>
+  filter(Relatorio > mes_corrente - months(meses)) |>
+  select(Grupo, Valor) |>
+  left_join(despesas_categorias, by = join_by("Grupo" == "Subcategoria")) |>
+  mutate(Categoria = replace_na(Categoria, "Não categorizado")) |>
+  group_by(Categoria) |>
+  summarise(Total = round( sum(Valor)/meses, 2 ), .groups = "keep") |>
+  arrange(desc(Total))
+```
+
+Despesa média mensal dos últimos 12 meses: `r em_real( sum( despesas_12m$Total ) )`
+
+#### Gráfico
+
+```{r}
+#| label: Gráfico de despesas últimos 12 meses
+
+plot_ly(data = despesas_12m, 
+        type = "pie", 
+        labels = ~Categoria, 
+        values = ~Total, 
+        name = "Últimos 12 meses por grupo de despesa")
+```
+
+#### Tabela
+
+```{r}
+#| label: Tabela de despesas últimos 12 meses
+
+despesas_12m |>
+  ungroup()
+```
+
+### Maiores despesas por mês
+
+```{r}
+#| label: Maiores despesas por mês
+df_despesas %>%
+  rename(Balancete = Relatorio) %>%
+  group_by(Balancete) %>%
+  arrange(desc(Valor)) %>%
+  slice(1:5) %>%
+  select(Balancete, Grupo, Destinatário, Obs, Liquidação, Valor) %>%
+  left_join(despesas_categorias, by = join_by("Grupo" == "Subcategoria")) |>
+  mutate(Categoria = replace_na(Categoria, "Não categorizado")) |>
+  relocate(Categoria, .before = Grupo) |>
+  arrange(desc(Balancete)) %>%
+  mutate(Balancete = format(Balancete, "%m/%Y"),
+         Liquidação = format(Liquidação, "%d/%m/%Y")) %>%
+  ungroup()
+```
+
+### Parcelamentos em aberto
+
+```{r}
+#| label: Parcelamentos em aberto
+parcelamentos_pendentes <- df_despesas |>
+  rename(Balancete = Relatorio) |>
+  filter(!is.na(Parcela), 
+         Liquidação >= today() %m-% months(5)) |>
+  group_by(Destinatário, Doc_id) |>
+  arrange(desc(Liquidação)) |>
+  slice(1) |>
+  ungroup() |>
+  filter(Parcela_pend > 0) |>
+  arrange(desc(Liquidação)) |>
+  mutate(Destinatário = if_else(Destinatário == "", str_trim( str_extract(Despesas, ".*?(?=[\\(\\)-])") ), Destinatário )) |>
+  mutate(Destinatário = coalesce(Destinatário, str_extract(Despesas, "[:alnum:]*"))) |>
+  select(Credor = Destinatário, Obs, Liquidação, Doc = Doc_id, Parcela, Pendentes = Parcela_pend, `Parcelas a pagar` = Saldo_devedor) |>
+  mutate(Credor = str_replace_all(Credor, "^$", "Não identificado"))
+  
+parcelamentos_pendentes |>
+  mutate(Liquidação = format(Liquidação, "%d/%m/%Y"),
+         Doc = as.character(Doc))
+```
+
+```{r}
+#| label: Gráfico de parcelas pendentes
+parcelamentos_pendentes %>%
+  plot_ly(type = "bar", x = ~Credor, y = ~`Parcelas a pagar`,
+          name = "Parcelas futuras")
+```
+
+## Equilíbrio financeiro
+
+A comparação direta entre a receita e a despesa indica o superávit / déficit das contas condominiais. Devido a sazonalidade de algumas despesas, ou inadimplências pontuais, é preferível essa comparação em termos médios.
+
+```{r}
+#| label: df de equilíbrio
+
+equilibrio <- inner_join(receitas_resumo, despesas_resumo, 
+                         join_by(Mês), suffix = c(".R", ".D")) %>%
+  select(Mês, Receitas, `Receitas (3m)` = `Média móvel 3 meses.R`, 
+         Despesas, `Despesas (3m)` = `Média móvel 3 meses.D`) %>%
+  mutate(`Diferença média` = `Receitas (3m)` - `Despesas (3m)`,
+         `Diferença mensal` = Receitas - Despesas,
+         `% das receitas` = scales::percent(`Diferença mensal` / Receitas, 0.01))
+
+equilibrio %>% mutate(`Mês` = format(`Mês`, "%m/%Y"))
+```
+
+### Receita X Despesa
+
+```{r}
+#| label: equilíbrio trimestral
+#| 
+equilibrio %>% 
+  plot_ly(x = ~Mês, y = ~`Diferença mensal`, 
+          type = "bar", name = "Superávit/Déficit mensal") %>%
+  add_lines(y = ~`Diferença média`, name = "Superávit/Déficit média 3 meses") %>%
+  add_lines(y = ~sum(`Diferença mensal`), name = "Superávit/Déficit total")
+
+```
+
+## Equipe
+
+```{r}
+#| label: Equipe
+
+equipe <- df_despesas |>
+  filter(str_detect(Grupo, regex("sal[a|á]rio", 
+                                ignore_case = TRUE)) | 
+           (str_detect(Grupo, regex("F[E|É]RIAS", 
+                                ignore_case = TRUE)))) |>
+  select(Funcionário = Destinatário, Valor, Competência) |>
+  mutate(Funcionário = str_replace(Funcionário, "ELISSANDRO VITORIANO SANTOS", "ELISSANDRO VITORINO SANTOS")) # corrige nome grafado errado
+
+funcionarios <- equipe |>
+  group_by(Funcionário) |>
+  summarise(Total = sum(Valor),
+            Meses = n_distinct(Competência),
+            De = min(Competência),
+            Até = max(Competência),
+            .groups = "keep") |>
+  ungroup()
+
+last2meses <- funcionarios$Até |>
+  unique() |>
+  sort() |>
+  tail(2)
+
+equipe_atual <- funcionarios |> 
+  filter(Até %in% last2meses) |> 
+  nrow()
+
+equipe_total <- nrow(funcionarios)
+
+turnover <- ( equipe_total - equipe_atual ) / equipe_atual
+
+funcionarios |>
+  mutate(De = format(De, "%m/%Y"),
+         Até = format(Até, "%m/%Y"))
+```
+
+Equipe atual: `r equipe_atual`
+
+Total de funcionários no histórico: `r equipe_total`
+
+Turnover: `r scales::label_percent(accuracy = 0.1, big.mark = ".", decimal.mark = ",")(turnover)`
+
+```{r}
+#| label: custo direto pessoal
+
+y2 <- list(tickfont = list(color = "black"),
+           overlaying = "y",
+           side = "right",
+           title = "Quantidade")
+
+equipe |>
+  group_by(Competência) |>
+  summarise(Total = sum(Valor),
+            Média = mean(Valor, na.rm = FALSE),
+            Funcionários = n_distinct(Funcionário)) |>
+  plot_ly(x = ~Competência, y = ~Total) |>
+  add_bars(name = "Custo direto de pessoal") |>
+  add_lines(y = ~`Média`, name = "Pagamento médio") |>
+  add_lines(y = ~`Funcionários`, yaxis = "y2", name = "Funcionários") |>
+  layout(
+    title = "Custo direto de pessoal", yaxis2 = y2,
+    xaxis = list(title="Valor")
+  )
+```

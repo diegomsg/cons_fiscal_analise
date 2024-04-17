@@ -1,0 +1,45 @@
+default:
+  empreendimento:
+    nome: 'Ellegance Atalaia'
+    nome_curto: 'Ellegance'
+    nome_completo: 'Condomínio Ellegance Atalaia'
+    endereco: 'Rua Firmino Fontes'
+    num: 10
+    cep: 49032770
+    bairro: 'Atalaia'
+    cidade: 'Aracaju'
+    uf: 'SE'
+    cnpj: '25063897000123'
+
+  unidades:
+    blocos: 2
+    blocos_nomes: 'Prime, Premium'
+    apart_andar: 4
+    andares_tipo: 12
+
+  path:
+    prest_contas: 'C:/Users/diego/OneDrive/Documentos/casa/condomínio/Conselho Fiscal/prest_contas_xlsx'
+    acordos: 'C:/Users/diego/OneDrive/Documentos/casa/condomínio/Conselho Fiscal/acordos_xlsx'
+
+  conformidade:
+    data_inicio: '2022-12-01'
+
+  administracao:
+    data_eleicao: '2022-10-08'
+    gestores:
+      principal:
+        funcao: 'síndico'
+        nome: 'Weninston'
+        nome_completo: 'Weniston Queiroz Sousa de Gois'
+        cpf: '01686905513'
+        rg: 30097215
+        id: 20303
+        paga: 0
+      secundario:
+        funcao: 'subsíndico'
+        nome: 'Rogério'
+        nome_completo: 'Rogério Reginato Alves Nunes'
+        cpf: '02257457552'
+        rg: 30373883
+        id: 10402
+        paga: 0

@@ -18,6 +18,9 @@
 # Output files from R CMD check
 /*.Rcheck/
 
+# User project
+.Rproj
+
 # RStudio files
 .Rproj.user/
 
@@ -47,3 +50,9 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# config file
+config.yaml
+
+# reports output
+output/
