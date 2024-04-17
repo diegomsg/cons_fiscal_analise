@@ -112,7 +112,7 @@ inner_join(gestores, unidades, by = join_by(id)) %>%
 
 Última competência atualizada: `r max(contas$Competência) %>% format("%m/%Y")`.
 
-Primeira comperência disponível: `r min(contas$Competência) %>% format("%m/%Y")`.
+Primeira competência disponível: `r min(contas$Competência) %>% format("%m/%Y")`.
 
 ::: parágrafo
 Apesar de disponibilizados, os balancetes mensais anteriores a `r min(contas$Competência) %>% format("%m/%Y")` não possuem integridade nas suas informações, pois a exclusão de uma das contas utilizadas à época dos sistemas da administradora impede que as informações exportadas inclua os valores movimentados nesta conta, tornando-os inviáveis.
