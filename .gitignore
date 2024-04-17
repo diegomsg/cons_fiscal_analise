@@ -52,7 +52,7 @@ po/*~
 rsconnect/
 
 # config file
-config.yaml
+config.yml
 
 # reports output
 output/
