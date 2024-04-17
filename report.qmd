@@ -102,7 +102,7 @@ As informações são organizadas de modo sequencial e resumido, e posteriomente
 #|label: Gestão
 #|tbl-cap: Dados do empreendimento e gestão
 inner_join(gestores, unidades, by = join_by(id)) %>%
-  select(função, Nome = nome_completo, torre, unidade) %>%
+  select(função = funcao, Nome = nome_completo, torre, unidade) %>%
   mutate(função = str_to_title(função)) %>%
   arrange(desc(função)) %>%
   rename_with(str_to_title)
