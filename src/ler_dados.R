@@ -23,6 +23,7 @@ suppressMessages({
 
 source("src/utils.R")
 source("src/ler_superlogica_xlsx.R")
+source("src/ler_acordos.R")
 
 
 # parâmetros --------------------------------------------------------------
@@ -285,3 +286,30 @@ Inadimplencia <- Receitas_p_unidade %>%
                               round(.20 * (Valor_bruto + multa + juros), 2),
                               0),
          Valor_atual = Valor_bruto + multa + juros + honorários)
+
+acordos <- acordos_read_folder(config$path$acordos) |>
+  mutate(unidade = str_replace_all(unidade, " TOWER", "TOWER")) |>
+  inner_join(unidades, by = join_by(unidade == und_name)) |>
+  select(-(ap:und_abv), -unidade, id) |>
+  relocate(id, .after = cod_acordo)
+
+acordos_adimplentes <- filter(acordos, !vencido) |>
+  select(id, cobrancas) |>
+  unnest_wider(cobrancas) |>
+  select(id, competencia) |>
+  unnest_longer(competencia) |>
+  distinct()
+
+acordos_andamento <- filter(acordos, !quitado) |>
+  select(id, cod_acordo, cobrancas, parcelas, total_emitido, total_pago, vencido) |>
+  select(-c(total_emitido, total_pago)) |>
+  mutate(competencias_negociadas = map(cobrancas, ~pull(.x, competencia) |>
+                                         unique() |>
+                                         as.Date() |>
+                                         format("%m/%Y") |>
+                                         str_flatten_comma()),
+         cobrancas_nao_pagas = map(parcelas, ~pull(filter(.x, is.na(pago)), emitido) |>
+                                     sum() |>
+                                     unlist())) |>
+  select(-(cobrancas:parcelas)) |>
+  unnest_longer(c(cobrancas_nao_pagas, competencias_negociadas))
