@@ -273,7 +273,7 @@ taxa_mensal <- Receitas_p_unidade %>%
   summarise(Valor_bruto = getmode(Valor_bruto))
 
 Inadimplencia <- Receitas_p_unidade %>%
-  filter(Quitada == F) %>%
+  filter(Quitada == F, Competência != last_competencia) %>%
   inner_join(taxa_mensal,
              by = join_by(Competência),
              suffix = c("_ori", "_base")) %>%
