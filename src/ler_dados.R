@@ -308,10 +308,9 @@ acordos_andamento <- filter(acordos, !quitado) |>
                                          as.Date() |>
                                          format("%m/%Y") |>
                                          str_flatten_comma()),
-         cobrancas_nao_pagas = map(parcelas, ~pull(filter(.x, is.na(pago)), emitido) |>
-                                     sum() |>
-                                     unlist()),
-         parcelas_a_pagar = map(parcelas, ~nrow(filter(.x, is.na(pago))))) |>
+         cobrancas_nao_pagas = map_vec(parcelas, ~pull(filter(.x, is.na(pago)), emitido) |>
+                                     sum()),
+         parcelas_a_pagar = map_vec(parcelas, ~nrow(filter(.x, is.na(pago))))) |>
   select(-(cobrancas:parcelas)) |>
   unnest_longer(c(cobrancas_nao_pagas, competencias_negociadas))
 
