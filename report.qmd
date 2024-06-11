@@ -244,7 +244,8 @@ Inadimplencia_historica %>%
 Os balancetes apresentados pela administradora têm apresentado problema recorrente de omissão de pagamentos entre a virada de mês, os quais não entram nem no balancete do mês anterior, nem do mês posterior, gerando problemas na apuração de inadimplência quando um pagamento é realizado no final do mês e liquidado apenas no mês seguinte.
 
 ::: callout-caution
-Outra questão que impacta a inadimplência corrente é a falta de informação no balancete quanto aos acordos realizados, que não mencionam a competência original dos documentos que passaram por negociação, mencionando a informação do acordo como a competência corrente. Considerar essa informação quando observar a inadimplência corrente.
+Outra questão que impacta a inadimplência corrente é a falta de informação no balancete quanto aos acordos realizados, que não mencionam a competência original dos documentos que passaram por negociação.
+Essa informação foi obtida externamente aos balancetes, e a falta de quitação nos acordos não tem sido considerada na caracterização da inadimplência da unidade, o que é um erro.
 :::
 
 ### Inadimplência corrente
@@ -275,6 +276,19 @@ group_by(Inadimplencia_corrente, Torre, Unidade) %>%
             Atualizado = sum(`Valor Atualizado`), .groups = "keep") %>%
   ungroup()
 ```
+
+### Acordos em andamento
+
+```{r}
+#| label: acordor andamento
+acordos_andamento %>%
+  inner_join(unidades, by = join_by(id)) %>%
+  mutate(adimplente = !vencido) %>%
+  select(Torre = torre, Unidade = unidade, Acordo = cod_acordo, 
+         Adimplente = adimplente, `Competências` = competencias_negociadas,
+         `A pagar` = cobrancas_nao_pagas)
+```
+
 
 ## Despesas
 
