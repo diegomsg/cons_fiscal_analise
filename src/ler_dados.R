@@ -311,7 +311,7 @@ acordos_andamento <- filter(acordos, !quitado) |>
          cobrancas_nao_pagas = map(parcelas, ~pull(filter(.x, is.na(pago)), emitido) |>
                                      sum() |>
                                      unlist()),
-         parcelas_a_pagar = map(parcelasm, ~nrow(filter(.x, is.na(pago))))) |>
+         parcelas_a_pagar = map(parcelas, ~nrow(filter(.x, is.na(pago))))) |>
   select(-(cobrancas:parcelas)) |>
   unnest_longer(c(cobrancas_nao_pagas, competencias_negociadas))
 
