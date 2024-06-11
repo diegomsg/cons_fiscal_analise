@@ -313,3 +313,5 @@ acordos_andamento <- filter(acordos, !quitado) |>
                                      unlist())) |>
   select(-(cobrancas:parcelas)) |>
   unnest_longer(c(cobrancas_nao_pagas, competencias_negociadas))
+
+Inadimplencia <- anti_join(Inadimplencia, acordos_adimplentes, by = join_by(id, Competência == competencia))
