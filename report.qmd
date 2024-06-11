@@ -285,7 +285,7 @@ acordos_andamento %>%
   mutate(adimplente = ifelse(vencido, "✅", "❌")) %>%
   select(Torre = torre, Unidade = unidade, Acordo = cod_acordo, 
          Adimplente = adimplente, `Competências` = competencias_negociadas,
-         `A pagar` = cobrancas_nao_pagas)
+         `A pagar` = cobrancas_nao_pagas, `Parcelas a pagar` = parcelas_a_pagar)
 ```
 
 ## Despesas
