@@ -244,8 +244,7 @@ Inadimplencia_historica %>%
 Os balancetes apresentados pela administradora têm apresentado problema recorrente de omissão de pagamentos entre a virada de mês, os quais não entram nem no balancete do mês anterior, nem do mês posterior, gerando problemas na apuração de inadimplência quando um pagamento é realizado no final do mês e liquidado apenas no mês seguinte.
 
 ::: callout-caution
-Outra questão que impacta a inadimplência corrente é a falta de informação no balancete quanto aos acordos realizados, que não mencionam a competência original dos documentos que passaram por negociação.
-Essa informação foi obtida externamente aos balancetes, e a falta de quitação nos acordos não tem sido considerada na caracterização da inadimplência da unidade, o que é um erro.
+Outra questão que impacta a inadimplência corrente é a falta de informação no balancete quanto aos acordos realizados, que não mencionam a competência original dos documentos que passaram por negociação. Essa informação foi obtida externamente aos balancetes, e a falta de quitação nos acordos não tem sido considerada na caracterização da inadimplência da unidade, o que é um erro.
 :::
 
 ### Inadimplência corrente
@@ -280,15 +279,14 @@ group_by(Inadimplencia_corrente, Torre, Unidade) %>%
 ### Acordos em andamento
 
 ```{r}
-#| label: acordor andamento
+#| label: acordos andamento
 acordos_andamento %>%
   inner_join(unidades, by = join_by(id)) %>%
-  mutate(adimplente = !vencido) %>%
+  mutate(adimplente = ifelse(vencido, "✅", "❌")) %>%
   select(Torre = torre, Unidade = unidade, Acordo = cod_acordo, 
          Adimplente = adimplente, `Competências` = competencias_negociadas,
          `A pagar` = cobrancas_nao_pagas)
 ```
-
 
 ## Despesas
 
@@ -330,11 +328,10 @@ despesas_resumo %>%
 df_despesas %>%
   select(Balancete = Relatorio, Grupo, Destinatário, Liquidação, Método, 
          Valor, Obs, Competência, Parcela, Parcela_n) %>%
-  mutate(Parcelamento = ifelse(!is.na(Parcela), glue::glue("{Parcela}/{Parcela_n}"), NA),
-         Competência = format(Competência, "%m/%Y")) %>%
+  mutate(Parcelamento = ifelse(!is.na(Parcela), glue::glue("{Parcela}/{Parcela_n}"), NA)) %>%
   select(-c(Parcela, Parcela_n)) %>%
   arrange(desc(Balancete), desc(Valor), Liquidação) %>%
-  mutate(Balancete = format(Balancete, "%m/%Y"))
+  mutate(across((where(is.Date)), ~format(.x, "%m/%Y")))
 ```
 
 ### Despesas por grupo em incidência mensal
