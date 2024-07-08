@@ -282,9 +282,9 @@ group_by(Inadimplencia_corrente, Torre, Unidade) %>%
 #| label: acordos andamento
 acordos_andamento %>%
   inner_join(unidades, by = join_by(id)) %>%
-  mutate(adimplente = ifelse(vencido, "✅", "❌")) %>%
+  mutate(status = ifelse(vencido, "vencido",  "adimplente")) %>%
   select(Torre = torre, Unidade = unidade, Acordo = cod_acordo, 
-         Adimplente = adimplente, `Competências` = competencias_negociadas,
+         Status = status, `Competências` = competencias_negociadas,
          `A pagar` = cobrancas_nao_pagas, `Parcelas a pagar` = parcelas_a_pagar)
 ```
 
