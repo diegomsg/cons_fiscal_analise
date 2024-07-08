@@ -51,13 +51,18 @@ get_contas <- function(base, posicoes) {
     slice(1:2) %>%
     select(character)
 
+  col_names <- c("Conta", "Saldo ant.", "Créditos", "Débitos", "Saldo final")
+
   dados <- conteudo %>%
     slice(-(1:2), -n()) %>%
     rectify() %>%
     select(-1) %>%
     row_to_names(1) %>%
+    select(-starts_with('Transf')) %>%
     mutate_at(2:5, em_numero) %>%
     mutate_at(1, toupper)
+
+  colnames(dados) <- col_names
 
   result <- tibble(relatorio = head[1,],
                    periodo = head[2,]) %>%
