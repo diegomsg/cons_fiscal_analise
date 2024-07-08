@@ -178,9 +178,9 @@ rm(lin, start, end, tempo)
 
 contas <- df_contas %>%
   select(periodo, Conta, 'Saldo ant.',
-         'Créditos*', 'Débitos*', 'Saldo final') %>%
-  rename(Competência = periodo, Saldo_inicial = 'Saldo ant.', C = 'Créditos*',
-         D = 'Débitos*', Saldo_final = 'Saldo final') %>%
+         'Créditos', 'Débitos', 'Saldo final') %>%
+  rename(Competência = periodo, Saldo_inicial = 'Saldo ant.', C = 'Créditos',
+         D = 'Débitos', Saldo_final = 'Saldo final') %>%
   mutate(
     Competência = sapply(Competência,
                          str_extract,
