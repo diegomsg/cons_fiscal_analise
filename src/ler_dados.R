@@ -251,7 +251,9 @@ Receitas_p_unidade <- expand_grid(id = unidades$id, Competência = meses) %>%
                          difftime(today(), Data_vencimento, "days") %>%
                            as.numeric(),
                          Tempo),
-         Atraso = replace_na(Atraso, TRUE),
+         Atraso = if_else(Competência == last_competencia,
+                          replace_na(Atraso, FALSE),
+                          replace_na(Atraso, TRUE)),
          Abonada = id %in% gestores$id,
          Quitada = !is.na(Valor_bruto) | Abonada)
 
